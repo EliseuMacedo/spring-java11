@@ -1,0 +1,71 @@
+package com.tecinfo.course.services;
+
+import java.util.List;
+import java.util.Optional;
+
+import javax.persistence.EntityNotFoundException;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.stereotype.Service;
+
+import com.tecinfo.course.entities.User;
+import com.tecinfo.course.repositories.UserRepository;
+import com.tecinfo.course.services.exceptions.DatabaseException;
+import com.tecinfo.course.services.exceptions.ResourceNotFoundException;
+
+@Service
+public class UserService {
+	
+	@Autowired
+	private UserRepository repository;
+	
+	public List<User> findAll(){
+		return repository.findAll();
+	}
+	
+	public User findById(Long id) {
+		//Desde o java 8 essa op retorna Optional
+		Optional<User> obj = repository.findById(id);
+		return obj.orElseThrow(()-> new ResourceNotFoundException(id)); 
+		
+	}
+	
+	public User insert(User obj) {
+		return repository.save(obj);
+	}
+	
+	public void delete(Long id) {
+		
+		try {
+			repository.deleteById(id);
+		}catch(EmptyResultDataAccessException e){
+			throw new ResourceNotFoundException(id);
+		}catch(DataIntegrityViolationException e) {
+			throw new DatabaseException(e.getMessage());
+		}
+
+	}
+	
+	public User update(Long id,User obj) {
+		
+		try {
+		User entity = repository.getOne(id); //não vai no bd, só deixa o objeto monitorado pelo jpa melhor que o findbyid
+		updateData(entity, obj);
+		return repository.save(entity);
+		}catch(EntityNotFoundException e) {
+			throw new ResourceNotFoundException(id);
+		}
+	}
+
+	private void updateData(User entity, User obj) {
+		
+		entity.setName(obj.getName());
+		entity.setEmail(obj.getEmail());
+		entity.setPhone(obj.getPhone());
+		
+	}
+	
+
+}
